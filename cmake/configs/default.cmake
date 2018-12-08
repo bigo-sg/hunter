@@ -13,5 +13,6 @@
 include(hunter_default_version)
 include(hunter_user_error)
 
+hunter_default_version(cmph VERSION 2.0)
 # NOTE: no names with spaces!
 
