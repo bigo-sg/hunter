@@ -14,5 +14,6 @@ include(hunter_default_version)
 include(hunter_user_error)
 
 hunter_default_version(cmph VERSION 2.0)
+hunter_default_version(leveldb VERSION 1.20)
 # NOTE: no names with spaces!
 
