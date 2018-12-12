@@ -15,7 +15,10 @@ include(hunter_user_error)
 
 hunter_default_version(cmph VERSION 2.0)
 hunter_default_version(gflags VERSION 2.2.1)
+hunter_default_version(gperftools VERSION 2.5)
 hunter_default_version(leveldb VERSION 1.20)
 hunter_default_version(openssl VERSION 1.0.2o)
+hunter_default_version(protobuf VERSION 3.5.1)
+hunter_default_version(zlib VERSION 1.2.11)
 # NOTE: no names with spaces!
 

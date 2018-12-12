@@ -78,196 +78,34 @@ find_path(OPENSSL_INCLUDE_DIR
   include
   )
 
-if(WIN32 AND NOT CYGWIN)
-  if(MSVC)
-    # /MD and /MDd are the standard values - if someone wants to use
-    # others, the libnames have to change here too
-    # use also ssl and ssleay32 in debug as fallback for openssl < 0.9.8b
-    # enable OPENSSL_MSVC_STATIC_RT to get the libs build /MT (Multithreaded no-DLL)
-    # In Visual C++ naming convention each of these four kinds of Windows libraries has it's standard suffix:
-    #   * MD for dynamic-release
-    #   * MDd for dynamic-debug
-    #   * MT for static-release
-    #   * MTd for static-debug
+find_library(OPENSSL_SSL_LIBRARY
+  NAMES
+  ssl
+  ssleay32
+  ssleay32MD
+  HINTS
+  "${OPENSSL_ROOT}"
+  PATH_SUFFIXES
+  lib
+  )
 
-    # Implementation details:
-    # We are using the libraries located in the VC subdir instead of the parent directory eventhough :
-    # libeay32MD.lib is identical to ../libeay32.lib, and
-    # ssleay32MD.lib is identical to ../ssleay32.lib
-    # enable OPENSSL_USE_STATIC_LIBS to use the static libs located in lib/VC/static
+find_library(OPENSSL_CRYPTO_LIBRARY
+  NAMES
+  crypto
+  HINTS
+  "${OPENSSL_ROOT}"
+  PATH_SUFFIXES
+  lib
+  )
 
-    if (OPENSSL_MSVC_STATIC_RT)
-      set(_OPENSSL_MSVC_RT_MODE "MT")
-    else ()
-      set(_OPENSSL_MSVC_RT_MODE "MD")
-    endif ()
+mark_as_advanced(OPENSSL_CRYPTO_LIBRARY OPENSSL_SSL_LIBRARY)
 
-    if(OPENSSL_USE_STATIC_LIBS)
-      set(_OPENSSL_PATH_SUFFIXES
-        "lib"
-        "VC/static"
-        "lib/VC/static"
-        )
-    else()
-      set(_OPENSSL_PATH_SUFFIXES
-        "lib"
-        "VC"
-        "lib/VC"
-        )
-    endif ()
+# compat defines
+set(OPENSSL_SSL_LIBRARIES ${OPENSSL_SSL_LIBRARY} ${CMAKE_DL_LIBS})
+set(OPENSSL_CRYPTO_LIBRARIES ${OPENSSL_CRYPTO_LIBRARY} ${CMAKE_DL_LIBS})
 
-    find_library(LIB_EAY_DEBUG
-      NAMES
-      libcrypto${_OPENSSL_MSVC_RT_MODE}d
-      libcryptod
-      libeay32${_OPENSSL_MSVC_RT_MODE}d
-      libeay32d
-      cryptod
-      HINTS
-      "${OPENSSL_ROOT}"
-      PATH_SUFFIXES
-      ${_OPENSSL_PATH_SUFFIXES}
-      )
+set(OPENSSL_LIBRARIES ${OPENSSL_SSL_LIBRARY} ${OPENSSL_CRYPTO_LIBRARY} ${CMAKE_DL_LIBS})
 
-    find_library(LIB_EAY_RELEASE
-      NAMES
-      libcrypto${_OPENSSL_MSVC_RT_MODE}
-      libcrypto
-      libeay32${_OPENSSL_MSVC_RT_MODE}
-      libeay32
-      crypto
-      HINTS
-      "${OPENSSL_ROOT}"
-      PATH_SUFFIXES
-      ${_OPENSSL_PATH_SUFFIXES}
-      )
-
-    find_library(SSL_EAY_DEBUG
-      NAMES
-      libssl${_OPENSSL_MSVC_RT_MODE}d
-      libssld
-      ssleay32${_OPENSSL_MSVC_RT_MODE}d
-      ssleay32d
-      ssld
-      HINTS
-      "${OPENSSL_ROOT}"
-      PATH_SUFFIXES
-      ${_OPENSSL_PATH_SUFFIXES}
-      )
-
-    find_library(SSL_EAY_RELEASE
-      NAMES
-      libssl${_OPENSSL_MSVC_RT_MODE}
-      libssl
-      ssleay32${_OPENSSL_MSVC_RT_MODE}
-      ssleay32
-      ssl
-      HINTS
-      "${OPENSSL_ROOT}"
-      PATH_SUFFIXES
-      ${_OPENSSL_PATH_SUFFIXES}
-      )
-
-    set(LIB_EAY_LIBRARY_DEBUG "${LIB_EAY_DEBUG}")
-    set(LIB_EAY_LIBRARY_RELEASE "${LIB_EAY_RELEASE}")
-    set(SSL_EAY_LIBRARY_DEBUG "${SSL_EAY_DEBUG}")
-    set(SSL_EAY_LIBRARY_RELEASE "${SSL_EAY_RELEASE}")
-
-    include(SelectLibraryConfigurations)
-    select_library_configurations(LIB_EAY)
-    select_library_configurations(SSL_EAY)
-
-    mark_as_advanced(LIB_EAY_LIBRARY_DEBUG LIB_EAY_LIBRARY_RELEASE
-      SSL_EAY_LIBRARY_DEBUG SSL_EAY_LIBRARY_RELEASE)
-    set(OPENSSL_SSL_LIBRARY ${SSL_EAY_LIBRARY} )
-    set(OPENSSL_CRYPTO_LIBRARY ${LIB_EAY_LIBRARY} )
-    set(OPENSSL_LIBRARIES ${SSL_EAY_LIBRARY} ${LIB_EAY_LIBRARY} )
-  elseif(MINGW)
-    # same player, for MinGW
-    set(LIB_EAY_NAMES crypto libeay32)
-    set(SSL_EAY_NAMES ssl ssleay32)
-    find_library(LIB_EAY
-      NAMES
-      ${LIB_EAY_NAMES}
-      HINTS
-      "${OPENSSL_ROOT}"
-      PATH_SUFFIXES
-      "lib"
-      "lib/MinGW"
-      )
-
-    find_library(SSL_EAY
-      NAMES
-      ${SSL_EAY_NAMES}
-      HINTS
-      "${OPENSSL_ROOT}"
-      PATH_SUFFIXES
-      "lib"
-      "lib/MinGW"
-      )
-
-    mark_as_advanced(SSL_EAY LIB_EAY)
-    set(OPENSSL_SSL_LIBRARY ${SSL_EAY} )
-    set(OPENSSL_CRYPTO_LIBRARY ${LIB_EAY} )
-    set(OPENSSL_LIBRARIES ${SSL_EAY} ${LIB_EAY} )
-    unset(LIB_EAY_NAMES)
-    unset(SSL_EAY_NAMES)
-  else()
-    # Not sure what to pick for -say- intel, let's use the toplevel ones and hope someone report issues:
-    find_library(LIB_EAY
-      NAMES
-      libeay32
-      HINTS
-      "${OPENSSL_ROOT}"
-      PATH_SUFFIXES
-      lib
-      )
-
-    find_library(SSL_EAY
-      NAMES
-      ssleay32
-      HINTS
-      "${OPENSSL_ROOT}"
-      PATH_SUFFIXES
-      lib
-      )
-
-    mark_as_advanced(SSL_EAY LIB_EAY)
-    set(OPENSSL_SSL_LIBRARY ${SSL_EAY} )
-    set(OPENSSL_CRYPTO_LIBRARY ${LIB_EAY} )
-    set(OPENSSL_LIBRARIES ${SSL_EAY} ${LIB_EAY} )
-  endif()
-else()
-
-  find_library(OPENSSL_SSL_LIBRARY
-    NAMES
-    ssl
-    ssleay32
-    ssleay32MD
-    HINTS
-    "${OPENSSL_ROOT}"
-    PATH_SUFFIXES
-    lib
-    )
-
-  find_library(OPENSSL_CRYPTO_LIBRARY
-    NAMES
-    crypto
-    HINTS
-    "${OPENSSL_ROOT}"
-    PATH_SUFFIXES
-    lib
-    )
-
-  mark_as_advanced(OPENSSL_CRYPTO_LIBRARY OPENSSL_SSL_LIBRARY)
-
-  # compat defines
-  set(OPENSSL_SSL_LIBRARIES ${OPENSSL_SSL_LIBRARY} ${CMAKE_DL_LIBS})
-  set(OPENSSL_CRYPTO_LIBRARIES ${OPENSSL_CRYPTO_LIBRARY} ${CMAKE_DL_LIBS})
-
-  set(OPENSSL_LIBRARIES ${OPENSSL_SSL_LIBRARY} ${OPENSSL_CRYPTO_LIBRARY} ${CMAKE_DL_LIBS})
-
-endif()
 
 function(from_hex HEX DEC)
   string(TOUPPER "${HEX}" HEX)

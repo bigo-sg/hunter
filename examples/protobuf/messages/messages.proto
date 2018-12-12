@@ -1,0 +1,6 @@
+syntax = "proto3";
+package brec.example;
+
+message Message {
+    string line = 1;
+}
